@@ -21,22 +21,13 @@ html { scrollbar-width: none; -ms-overflow-style: none; }
 ::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
 body {
-  background: var(--bg);
+  /* default 狀態列底色會跟著 body 背景 → 用白色讓頂部時間/Wi-Fi 區白底（文字仍深色可見） */
+  background: #ffffff;
   color: var(--text);
   font-family: -apple-system, "PingFang TC", "Helvetica Neue", "Segoe UI", sans-serif;
-  padding-bottom: calc(90px + env(safe-area-inset-bottom));
-}
-
-/* iOS 狀態列（時間 / Wi-Fi 等）區域維持白底，捲動時也不變 */
-body::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: env(safe-area-inset-top);
-  background: #ffffff;
-  z-index: 100;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 頂部 */
@@ -69,7 +60,15 @@ body::before {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* 卡片 */
-main { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+main {
+  flex: 1 1 auto;
+  background: var(--bg); /* 灰底讓白卡片浮起；白底只留給頂部狀態列 */
+  padding: 16px;
+  padding-bottom: calc(90px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 .card { background: var(--card); border-radius: 16px; padding: 18px; box-shadow: var(--shadow); }
 .card h2 { margin: 0 0 14px; font-size: 14px; color: var(--muted); font-weight: 600; letter-spacing: .3px; }
 .chart-wrap { position: relative; height: 220px; display: flex; align-items: center; justify-content: center; }
