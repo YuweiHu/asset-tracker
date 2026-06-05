@@ -92,6 +92,14 @@ export async function pull() {
   return JSON.parse(text);
 }
 
+// 歷史快照（每日結算資料）：回傳依時間排序的陣列
+export async function fetchHistory(days = 90) {
+  const res = await authFetch(`/history?days=${days}`);
+  if (!res.ok) throw new Error(`歷史讀取失敗 (${res.status})`);
+  const data = await res.json();
+  return data.snapshots || [];
+}
+
 export async function pushNow() {
   setStatus('syncing');
   try {

@@ -15,11 +15,28 @@
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 .icon { display: inline-block; vertical-align: middle; flex-shrink: 0; }
 html, body { margin: 0; padding: 0; }
+
+/* 全域隱藏捲軸（手機與桌面） */
+html { scrollbar-width: none; -ms-overflow-style: none; }
+::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
 body {
   background: var(--bg);
   color: var(--text);
   font-family: -apple-system, "PingFang TC", "Helvetica Neue", "Segoe UI", sans-serif;
-  padding-bottom: 90px;
+  padding-bottom: calc(90px + env(safe-area-inset-bottom));
+}
+
+/* iOS 狀態列（時間 / Wi-Fi 等）區域維持白底，捲動時也不變 */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top);
+  background: #ffffff;
+  z-index: 100;
 }
 
 /* 頂部 */
@@ -57,6 +74,27 @@ main { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
 .card h2 { margin: 0 0 14px; font-size: 14px; color: var(--muted); font-weight: 600; letter-spacing: .3px; }
 .chart-wrap { position: relative; height: 220px; display: flex; align-items: center; justify-content: center; }
 .chart-wrap canvas { margin: 0 auto; }
+
+/* 圖表輪播：左右滑動切換 */
+.chart-card { padding-bottom: 14px; }
+.carousel {
+  display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.carousel::-webkit-scrollbar { display: none; }
+.slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: center; }
+.dots { display: flex; gap: 7px; justify-content: center; margin-top: 14px; }
+.dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); transition: all .2s; }
+.dots i.active { background: var(--accent); width: 18px; border-radius: 4px; }
+.trend-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.trend-head h2 { margin: 0; }
+.range-toggle { display: flex; gap: 4px; }
+.range-toggle button {
+  border: none; background: var(--card2); color: var(--muted);
+  font-size: 12px; padding: 5px 9px; border-radius: 7px; font-weight: 600;
+}
+.range-toggle button.active { background: var(--accent); color: var(--accent-text); }
+.trend-meta { text-align: center; font-size: 12px; color: var(--muted); margin-top: 10px; min-height: 16px; font-weight: 600; }
 .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 16px; justify-content: center; }
 .legend span { font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 6px; font-weight: 500; }
 .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }

@@ -38,11 +38,28 @@
     </header>
 
     <main>
-      <!-- 配置圓餅圖 -->
-      <section class="card">
-        <h2>資產配置</h2>
-        <div class="chart-wrap"><canvas id="allocChart"></canvas></div>
-        <div class="legend" id="allocLegend"></div>
+      <!-- 圖表卡片：左右滑動切換 配置圓餅圖 / 資產走勢 -->
+      <section class="card chart-card">
+        <div class="carousel" id="chartCarousel">
+          <div class="slide">
+            <h2>資產配置</h2>
+            <div class="chart-wrap"><canvas id="allocChart"></canvas></div>
+            <div class="legend" id="allocLegend"></div>
+          </div>
+          <div class="slide">
+            <div class="trend-head">
+              <h2>資產走勢</h2>
+              <div class="range-toggle" id="rangeToggle">
+                <button data-days="30">30天</button>
+                <button data-days="90" class="active">90天</button>
+                <button data-days="3650">全部</button>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+            <div class="trend-meta" id="trendMeta"></div>
+          </div>
+        </div>
+        <div class="dots" id="chartDots"><i class="active"></i><i></i></div>
       </section>
 
       <!-- 持股列表 -->

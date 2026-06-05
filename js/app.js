@@ -32,10 +32,14 @@ import {
   schedulePush,
   setAuthLostHandler,
   onStatus,
+  fetchHistory,
 } from "./sync.js";
 
 let editingId = null;
 let allocChart = null;
+let trendChart = null;
+let historyData = []; // 每日結算快照（依時間排序）
+let trendDays = 90; // 走勢圖區間
 let selectedFut = null; // 期貨表單目前選定的商品 {code,name}
 let refreshing = false; // 報價更新中旗標（避免併發）
 let ddType, ddCurrency;
@@ -165,6 +169,94 @@ function renderCharts(totals) {
           `<span><i style="background:${CAT_COLOR[c]}"></i>${CAT_LABEL[c]} ${((totals[c] / total) * 100).toFixed(1)}%</span>`,
       )
       .join("") || '<span style="color:var(--muted)">尚無資料</span>';
+}
+
+/* ---------- 資產走勢 ---------- */
+async function loadHistory(days) {
+  try {
+    historyData = await fetchHistory(days);
+  } catch (e) {
+    historyData = historyData || []; // 失敗（離線/未登入）保留現有
+  }
+  renderTrend();
+}
+
+function renderTrend() {
+  const useUsd = store.displayCcy === "USD";
+  const rows = historyData || [];
+  const labels = rows.map((r) => {
+    const d = new Date(r.ts);
+    return `${d.getMonth() + 1}/${d.getDate()}`;
+  });
+  const data = rows.map((r) => (useUsd ? r.total_usd : r.total_twd));
+
+  if (trendChart) trendChart.destroy();
+
+  if (!rows.length) {
+    el.trendMeta.textContent = "尚無歷史資料，每日收盤後會自動記錄";
+    return;
+  }
+
+  trendChart = new window.Chart(el.trendChart, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          data,
+          borderColor: "#4f46e5",
+          backgroundColor: "rgba(79,70,229,.08)",
+          fill: true,
+          tension: 0.3,
+          borderWidth: 2,
+          pointRadius: rows.length > 40 ? 0 : 3,
+          pointBackgroundColor: "#4f46e5",
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: CHART_ANIM_MS },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => fmt(ctx.parsed.y),
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { maxTicksLimit: 6, color: "#94a3b8", font: { size: 11 } },
+        },
+        y: {
+          grid: { color: "#f1f5f9" },
+          ticks: {
+            maxTicksLimit: 5,
+            color: "#94a3b8",
+            font: { size: 11 },
+            callback: (v) => fmt(v),
+          },
+        },
+      },
+    },
+  });
+
+  // 區間變化（第一點 → 最後一點）
+  const first = data[0],
+    last = data[data.length - 1];
+  if (data.length > 1 && first) {
+    const diff = last - first;
+    const up = diff >= 0;
+    const pctv = (diff / first) * 100;
+    el.trendMeta.className = "trend-meta " + (up ? "up" : "down");
+    el.trendMeta.textContent = `區間變化 ${up ? "+" : "-"}${fmt(Math.abs(diff))}（${pct(pctv)}）`;
+  } else {
+    el.trendMeta.className = "trend-meta";
+    el.trendMeta.textContent = `目前 ${fmt(last)} ・ 持續累積中`;
+  }
 }
 
 // 損益列：今日漲跌% 與 損益%，各自依正負上色（漲綠跌紅）
@@ -464,6 +556,29 @@ el.ccyToggle.addEventListener("click", (e) => {
   save();
   setCcyButtons();
   render();
+  renderTrend(); // 走勢圖跟著切換幣別（用已快取資料，不重抓）
+});
+
+// 圖表輪播：滑動時更新指示點，切到走勢圖時校正尺寸
+el.chartCarousel.addEventListener("scroll", () => {
+  const idx = Math.round(
+    el.chartCarousel.scrollLeft / (el.chartCarousel.clientWidth || 1),
+  );
+  [...el.chartDots.children].forEach((d, i) =>
+    d.classList.toggle("active", i === idx),
+  );
+  if (idx === 1 && trendChart) trendChart.resize();
+});
+
+// 走勢圖區間切換
+el.rangeToggle.addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  trendDays = parseInt(b.dataset.days, 10);
+  [...el.rangeToggle.children].forEach((x) =>
+    x.classList.toggle("active", x === b),
+  );
+  loadHistory(trendDays);
 });
 // 點背景關閉彈窗
 el.formModal.addEventListener("click", (e) => {
@@ -558,6 +673,7 @@ async function bootSync() {
   setCcyButtons();
   render();
   maybeRefreshStale();
+  loadHistory(trendDays); // 載入每日結算歷史，畫走勢圖
 }
 
 function maybeRefreshStale() {

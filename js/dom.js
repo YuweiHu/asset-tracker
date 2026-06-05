@@ -4,6 +4,7 @@
  */
 const IDS = [
   'refreshBtn', 'totalValue', 'totalPnl', 'allocChart', 'allocLegend', 'holdingsList', 'fxLine',
+  'trendChart', 'chartCarousel', 'chartDots', 'rangeToggle', 'trendMeta',
   'formModal', 'formTitle', 'fDelete', 'fSymbol', 'fShares', 'fAvgCost', 'fName', 'fAmount',
   'fFutSearch', 'fFutResults', 'fFutSelected', 'fFutLots', 'fFutMult', 'fFutEntry', 'fFutMargin',
   'fabAdd', 'fCancel', 'fSave', 'settingsBtn', 'settingsModal', 'sClose', 'sExport',
