@@ -17,7 +17,13 @@
 html, body { margin: 0; padding: 0; }
 
 /* 全域隱藏捲軸（手機與桌面） */
-html { scrollbar-width: none; -ms-overflow-style: none; }
+/* 根層灰底：下方回彈(overscroll)露出的也是灰，避免灰白交界 */
+html {
+  background: var(--bg);
+  overscroll-behavior: none;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
 ::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
 body {
@@ -28,6 +34,19 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overscroll-behavior: none;
+}
+
+/* 固定白條蓋住 iOS 狀態列：捲動的內容會被遮在底下，不與時間/Wi-Fi 文字重疊 */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top);
+  background: #ffffff;
+  z-index: 100;
 }
 
 /* 頂部 */
