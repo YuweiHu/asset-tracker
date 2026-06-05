@@ -29,3 +29,6 @@ export const FUT_LOOKBACK_DAYS = 12;          // 期貨日資料回溯天數（�
 
 /* FinMind API：所有資料（美股/台股/期貨/匯率）單一來源，原生支援 CORS，免金鑰。 */
 export const FINMIND_API = 'https://api.finmindtrade.com/api/v4/data';
+
+/* 雲端同步後端（Cloudflare Worker）：登入、持倉同步、每日歷史。 */
+export const SYNC_API = 'https://asset-sync.asset-sync.workers.dev';

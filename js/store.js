@@ -14,17 +14,27 @@ function loadState() {
   return {
     holdings: [],
     settings: { defaultCcy: 'TWD' },
-    cache: { prices: {}, fxUSDTWD: null }
+    cache: { prices: {}, fxUSDTWD: null },
+    meta: { updatedAt: 0 }
   };
 }
 
 export const store = {
   state: loadState(),
   displayCcy: 'TWD',
+  onSave: null, // 由同步模組掛上：每次存檔後排程推送
 };
 store.displayCcy = store.state.settings.defaultCcy || 'TWD';
 
 export function save() {
+  if (!store.state.meta) store.state.meta = {};
+  store.state.meta.updatedAt = Date.now(); // 蓋上時間戳，供多裝置「較新者勝」
+  localStorage.setItem(STORE_KEY, JSON.stringify(store.state));
+  store.onSave?.();
+}
+
+// 只寫本機、不蓋時間戳、不觸發推送（採用雲端資料後落地用）
+export function saveLocal() {
   localStorage.setItem(STORE_KEY, JSON.stringify(store.state));
 }
 

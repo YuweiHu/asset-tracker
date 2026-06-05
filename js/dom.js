@@ -8,6 +8,7 @@ const IDS = [
   'fFutSearch', 'fFutResults', 'fFutSelected', 'fFutLots', 'fFutMult', 'fFutEntry', 'fFutMargin',
   'fabAdd', 'fCancel', 'fSave', 'settingsBtn', 'settingsModal', 'sClose', 'sExport',
   'sImport', 'sImportFile', 'ccyToggle',
+  'loginOverlay', 'loginUser', 'loginPass', 'loginBtn', 'loginErr', 'logoutBtn', 'syncStatus',
 ];
 
 export const el = {};

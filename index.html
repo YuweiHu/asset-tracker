@@ -34,6 +34,7 @@
         <span data-icon="refresh-cw" data-size="16"></span
         ><span class="btn-label">更新資產</span>
       </button>
+      <div class="sync-line" id="syncStatus"></div>
     </header>
 
     <main>
@@ -173,10 +174,38 @@
           />
         </div>
         <p class="hint" id="fxLine"></p>
+        <div class="backup-row">
+          <button class="btn-ghost" id="logoutBtn">登出</button>
+        </div>
         <div class="modal-actions">
           <div style="flex: 1"></div>
           <button class="btn-primary" id="sClose">完成</button>
         </div>
+      </div>
+    </div>
+
+    <!-- 登入畫面 -->
+    <div class="login-overlay" id="loginOverlay">
+      <div class="login-card">
+        <h1 class="login-title">資產管理</h1>
+        <p class="login-sub">登入以同步你的資產</p>
+        <input
+          id="loginUser"
+          class="login-input"
+          placeholder="帳號"
+          autocapitalize="off"
+          autocorrect="off"
+          autocomplete="username"
+        />
+        <input
+          id="loginPass"
+          class="login-input"
+          type="password"
+          placeholder="密碼"
+          autocomplete="current-password"
+        />
+        <button class="btn-primary login-btn" id="loginBtn">登入</button>
+        <p class="login-err" id="loginErr"></p>
       </div>
     </div>
 

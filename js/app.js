@@ -11,7 +11,7 @@ import {
   isFutures,
   isStock,
 } from "./config.js";
-import { store, save, uid } from "./store.js";
+import { store, save, saveLocal, uid } from "./store.js";
 import {
   fetchPrice,
   fetchFx,
@@ -23,6 +23,16 @@ import { evalHolding, priceKey, fmt, pct } from "./calc.js";
 import { Dropdown } from "./dropdown.js";
 import { el } from "./dom.js";
 import { svgIcon, renderIcons } from "./icons.js";
+import {
+  login,
+  logout,
+  isLoggedIn,
+  pull,
+  pushNow,
+  schedulePush,
+  setAuthLostHandler,
+  onStatus,
+} from "./sync.js";
 
 let editingId = null;
 let allocChart = null;
@@ -474,16 +484,115 @@ ddCurrency = new Dropdown("fCurrency", [
   { value: "USD", label: "USD 美元" },
 ]);
 
+/* ---------- 登入 / 同步 ---------- */
+function showLogin() {
+  if (!el.loginUser.value) el.loginUser.value = "cliffhu";
+  el.loginErr.textContent = "";
+  el.loginOverlay.classList.add("show");
+}
+function hideLogin() {
+  el.loginOverlay.classList.remove("show");
+}
+async function doLogin() {
+  const u = el.loginUser.value.trim();
+  const p = el.loginPass.value;
+  if (!u || !p) {
+    el.loginErr.textContent = "請輸入帳號與密碼";
+    return;
+  }
+  el.loginBtn.disabled = true;
+  el.loginErr.textContent = "登入中…";
+  try {
+    await login(u, p);
+    el.loginPass.value = "";
+    el.loginErr.textContent = "";
+    hideLogin();
+    await bootSync();
+  } catch (e) {
+    el.loginErr.textContent = e.message || "登入失敗";
+  } finally {
+    el.loginBtn.disabled = false;
+  }
+}
+
+const SYNC_TXT = {
+  pending: "待同步…",
+  syncing: "同步中…",
+  ok: "已同步",
+  error: "同步失敗",
+  offline: "離線（僅本機）",
+};
+function renderSyncStatus({ status, lastSync }) {
+  let t = SYNC_TXT[status] || "";
+  if (status === "ok" && lastSync)
+    t = "已同步 " + new Date(lastSync).toLocaleTimeString("zh-TW");
+  el.syncStatus.textContent = t;
+  el.syncStatus.className = "sync-line" + (status === "error" ? " down" : "");
+}
+
+// 採用雲端資料並落地本機（不蓋時間戳、不回推）
+function adoptState(data) {
+  store.state = data;
+  if (!store.state.settings) store.state.settings = { defaultCcy: "TWD" };
+  if (!store.state.cache) store.state.cache = { prices: {}, fxUSDTWD: null };
+  if (!store.state.meta) store.state.meta = { updatedAt: 0 };
+  saveLocal();
+}
+
+async function bootSync() {
+  try {
+    const remote = await pull();
+    const localTs = store.state.meta?.updatedAt || 0;
+    const remoteTs = remote?.meta?.updatedAt || 0;
+    if (!remote) {
+      save(); // 雲端尚無資料 → 上傳本機（save 觸發推送）
+    } else if (remoteTs > localTs) {
+      adoptState(remote); // 雲端較新 → 採用
+    } else if (localTs > remoteTs) {
+      pushNow().catch(() => {}); // 本機較新 → 推送
+    }
+  } catch (e) {
+    renderSyncStatus({ status: "offline" }); // 離線：用本機資料，不阻擋
+  }
+  store.displayCcy = store.state.settings?.defaultCcy || "TWD";
+  setCcyButtons();
+  render();
+  maybeRefreshStale();
+}
+
+function maybeRefreshStale() {
+  if (store.state.holdings.some((h) => !isCash(h.type))) {
+    const stale =
+      !store.state.cache.lastUpdate ||
+      Date.now() - store.state.cache.lastUpdate > STALE_MS;
+    if (stale) refreshAll();
+  }
+}
+
+el.loginBtn.addEventListener("click", doLogin);
+el.loginPass.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") doLogin();
+});
+el.logoutBtn.addEventListener("click", () => {
+  logout();
+  closeSettings();
+  showLogin();
+});
+
+/* ---------- 啟動 ---------- */
 renderIcons(); // 把 HTML 內的 data-icon 換成 Lucide SVG
 setCcyButtons();
-render();
+render(); // 先以本機資料渲染（未登入時登入框會蓋在上層）
 
-// 開啟時若有股票/期貨且報價過期，自動更新一次
-if (store.state.holdings.some((h) => !isCash(h.type))) {
-  const stale =
-    !store.state.cache.lastUpdate ||
-    Date.now() - store.state.cache.lastUpdate > STALE_MS;
-  if (stale) refreshAll();
+store.onSave = schedulePush; // 每次本機存檔後自動排程推送
+setAuthLostHandler(showLogin); // token 失效 → 回到登入
+onStatus(renderSyncStatus);
+
+if (isLoggedIn()) {
+  hideLogin();
+  bootSync();
+} else {
+  showLogin();
 }
 
 // 註冊 Service Worker（PWA 離線）

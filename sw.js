@@ -1,5 +1,5 @@
 /* Service Worker — 快取靜態資源，讓 PWA 可離線開啟 */
-const CACHE = 'asset-tracker-v15';
+const CACHE = 'asset-tracker-v16';
 const ASSETS = [
   './',
   './index.html',
@@ -12,6 +12,7 @@ const ASSETS = [
   './js/dropdown.js',
   './js/dom.js',
   './js/icons.js',
+  './js/sync.js',
   './manifest.json',
   './vendor/chart.umd.min.js',
   './icons/icon-180.png',
