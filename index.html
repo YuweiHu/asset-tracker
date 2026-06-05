@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="資產" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icons/icon-180.png" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>資產管理</title>
+  </head>
+  <body>
+    <!-- 頂部總資產 -->
+    <header class="topbar">
+      <div class="topbar-row">
+        <button class="settings-btn" id="settingsBtn">
+          <span data-icon="settings" data-size="20"></span>
+        </button>
+        <div class="ccy-toggle" id="ccyToggle">
+          <button data-ccy="TWD" class="active">TWD</button>
+          <button data-ccy="USD">USD</button>
+        </div>
+      </div>
+      <div class="total-label">總資產</div>
+      <div class="total-value" id="totalValue">—</div>
+      <div class="total-sub" id="totalPnl"></div>
+      <button class="refresh-btn" id="refreshBtn">
+        <span data-icon="refresh-cw" data-size="16"></span
+        ><span class="btn-label">更新資產</span>
+      </button>
+    </header>
+
+    <main>
+      <!-- 配置圓餅圖 -->
+      <section class="card">
+        <h2>資產配置</h2>
+        <div class="chart-wrap"><canvas id="allocChart"></canvas></div>
+        <div class="legend" id="allocLegend"></div>
+      </section>
+
+      <!-- 持股列表 -->
+      <section class="card" id="holdingsList"></section>
+    </main>
+
+    <!-- 浮動新增鈕 -->
+    <button class="fab" id="fabAdd">
+      <span data-icon="plus" data-size="26"></span>
+    </button>
+
+    <!-- 新增/編輯彈窗 -->
+    <div class="modal-backdrop" id="formModal">
+      <div class="modal">
+        <h3 id="formTitle">新增資產</h3>
+        <div class="field">
+          <span class="field-label">類別</span>
+          <div id="fType"></div>
+        </div>
+        <div class="field-stock">
+          <label
+            >股票代號
+            <input
+              id="fSymbol"
+              placeholder="美股: AAPL ／ 台股: 2330"
+              autocapitalize="characters"
+          /></label>
+          <label
+            >持有股數
+            <input
+              id="fShares"
+              type="number"
+              inputmode="decimal"
+              placeholder="例如 10"
+          /></label>
+          <label
+            >平均成本（選填，每股）
+            <input
+              id="fAvgCost"
+              type="number"
+              inputmode="decimal"
+              placeholder="留空則不算損益"
+          /></label>
+        </div>
+        <div class="field-cash">
+          <label
+            >帳戶名稱 <input id="fName" placeholder="例如 台新台幣"
+          /></label>
+          <div class="field">
+            <span class="field-label">幣別</span>
+            <div id="fCurrency"></div>
+          </div>
+          <label
+            >金額
+            <input
+              id="fAmount"
+              type="number"
+              inputmode="decimal"
+              placeholder="例如 50000"
+          /></label>
+        </div>
+        <div class="field-futures">
+          <label
+            ><span data-icon="search" data-size="14" class="lbl-icon"></span
+            >商品搜尋
+            <input
+              id="fFutSearch"
+              placeholder="輸入名稱，如 聯發科、小型臺指"
+            />
+          </label>
+          <div class="fut-results" id="fFutResults"></div>
+          <div class="fut-selected" id="fFutSelected"></div>
+          <label
+            >口數（做空填負數，如 -1）
+            <input
+              id="fFutLots"
+              type="number"
+              inputmode="numeric"
+              placeholder="例如 1"
+          /></label>
+          <label
+            >每口乘數（每點/每股價值，會自動帶入可改）
+            <input
+              id="fFutMult"
+              type="number"
+              inputmode="decimal"
+              placeholder="小型個股=100 ・ 小台=50"
+          /></label>
+          <label
+            >進場價
+            <input
+              id="fFutEntry"
+              type="number"
+              inputmode="decimal"
+              placeholder="你的成交價"
+          /></label>
+          <label
+            >已存保證金（TWD）
+            <input
+              id="fFutMargin"
+              type="number"
+              inputmode="decimal"
+              placeholder="這口投入的保證金"
+          /></label>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-del" id="fDelete">
+            <span data-icon="trash-2" data-size="16"></span>刪除
+          </button>
+          <div style="flex: 1"></div>
+          <button class="btn-ghost" id="fCancel">取消</button>
+          <button class="btn-primary" id="fSave">儲存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 設定彈窗 -->
+    <div class="modal-backdrop" id="settingsModal">
+      <div class="modal">
+        <h3>設定</h3>
+        <div class="backup-row">
+          <button class="btn-ghost" id="sExport">匯出備份</button>
+          <button class="btn-ghost" id="sImport">匯入備份</button>
+          <input
+            type="file"
+            id="sImportFile"
+            accept="application/json"
+            hidden
+          />
+        </div>
+        <p class="hint" id="fxLine"></p>
+        <div class="modal-actions">
+          <div style="flex: 1"></div>
+          <button class="btn-primary" id="sClose">完成</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="vendor/chart.umd.min.js"></script>
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

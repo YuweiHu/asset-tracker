@@ -1,0 +1,8 @@
+# 開發用 / 不上線的檔案
+.claude/
+README.md
+make_icons.py
+_loadtest*
+_calctest*
+.DS_Store
+*.log
