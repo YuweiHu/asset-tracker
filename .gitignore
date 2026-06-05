@@ -6,3 +6,9 @@ _loadtest*
 _calctest*
 .DS_Store
 *.log
+
+# Cloudflare Worker（worker/）本機產物與機密
+worker/.wrangler/
+worker/node_modules/
+worker/.dev.vars
+.dev.vars

@@ -1,0 +1,19 @@
+{
+  "name": "asset-sync",
+  "main": "src/index.js",
+  "compatibility_date": "2024-11-01",
+  "observability": { "enabled": true },
+  "kv_namespaces": [
+    { "binding": "HOLDINGS", "id": "75bd350667a549aab4d63f675f44b200" }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "asset-history",
+      "database_id": "b27aadc2-8505-4424-ae27-e6236ca48f51"
+    }
+  ],
+  "triggers": {
+    "crons": ["0 6 * * 1-5", "0 21 * * 1-5"]
+  }
+}
