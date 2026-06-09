@@ -3,12 +3,12 @@
  * （fType / fCurrency 為下拉掛載點，由 Dropdown 以 id 自行取得，不在此列。）
  */
 const IDS = [
-  'refreshBtn', 'totalValue', 'totalPnl', 'allocChart', 'allocLegend', 'holdingsList', 'fxLine',
+  'refreshBtn', 'totalLabel', 'totalValue', 'totalPnl', 'allocChart', 'allocLegend', 'holdingsList', 'fxLine',
   'trendChart', 'chartCarousel', 'chartDots', 'rangeToggle', 'trendMeta',
   'formModal', 'formTitle', 'fDelete', 'fSymbol', 'fShares', 'fAvgCost', 'fName', 'fAmount',
   'fFutSearch', 'fFutResults', 'fFutSelected', 'fFutLots', 'fFutMult', 'fFutEntry', 'fFutMargin',
   'fabAdd', 'fCancel', 'fSave', 'settingsBtn', 'settingsModal', 'sClose', 'sExport',
-  'sImport', 'sImportFile', 'ccyToggle',
+  'sImport', 'sImportFile', 'ccyToggle', 'viewToggle',
   'loginOverlay', 'loginUser', 'loginPass', 'loginBtn', 'loginErr', 'logoutBtn', 'syncStatus',
 ];
 

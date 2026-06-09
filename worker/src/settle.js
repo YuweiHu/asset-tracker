@@ -4,7 +4,9 @@
  *   股票  = 收盤價 × 股數（美股再乘匯率換台幣）
  *   期貨  = 保證金 + 未實現損益((price-entry)×乘數×口數)
  *   現金  = 金額（美元再乘匯率）
- * 全部以台幣為基準，total_usd = total_twd / 匯率。
+ *   負債  = 金額（美元再乘匯率），僅記入 breakdown，不計入 total
+ * 全部以台幣為基準，total_twd/total_usd = 總資產（不含負債），breakdown 各類別存正值。
+ * （淨資產由前端用 total − breakdown.liability 計算，走勢圖維持總資產。）
  */
 const FINMIND = 'https://api.finmindtrade.com/api/v4/data';
 const PRICE_LOOKBACK_DAYS = 14;
@@ -16,6 +18,7 @@ const TYPES = {
   tw_stock: { kind: 'stock', currency: 'TWD', dataset: 'TaiwanStockPrice', closeField: 'close' },
   tw_futures: { kind: 'futures', currency: 'TWD' },
   cash: { kind: 'cash' },
+  liability: { kind: 'liability' },
 };
 const CATS = Object.keys(TYPES);
 
@@ -81,7 +84,7 @@ export async function computeSnapshot(state) {
     const cfg = TYPES[h.type] || {};
     let valTwd = 0;
     try {
-      if (cfg.kind === 'cash') {
+      if (cfg.kind === 'cash' || cfg.kind === 'liability') {
         valTwd = h.currency === 'USD' ? (h.amount || 0) * fx : h.amount || 0;
       } else if (cfg.kind === 'futures') {
         const price = await fetchFutClose(h.code);
@@ -97,7 +100,7 @@ export async function computeSnapshot(state) {
       continue;
     }
     breakdown[h.type] = round2(breakdown[h.type] + valTwd);
-    totalTwd += valTwd;
+    if (cfg.kind !== 'liability') totalTwd += valTwd; // 負債只記 breakdown，不計入 total（total = 總資產）
   }
 
   return {

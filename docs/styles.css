@@ -64,6 +64,8 @@ body::before {
   padding: 5px 13px; border-radius: 999px; font-size: 13px; font-weight: 600; transition: all .15s;
 }
 .ccy-toggle button.active { background: var(--accent); color: var(--accent-text); box-shadow: var(--shadow); }
+.setting-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.setting-label { font-size: 14px; color: var(--text); font-weight: 500; }
 .total-label { margin-top: 20px; color: var(--muted); font-size: 13px; letter-spacing: 2px; font-weight: 600; }
 .total-value { font-size: 42px; font-weight: 700; margin-top: 6px; letter-spacing: -1.5px; color: var(--text); }
 .total-sub { margin-top: 8px; font-size: 14px; min-height: 18px; font-weight: 600; }
@@ -97,12 +99,13 @@ main {
 .chart-card { padding-bottom: 14px; }
 .carousel {
   display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none; cursor: grab;
 }
+.carousel.dragging { cursor: grabbing; scroll-snap-type: none; user-select: none; }
 .carousel::-webkit-scrollbar { display: none; }
 .slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: center; }
 .dots { display: flex; gap: 7px; justify-content: center; margin-top: 14px; }
-.dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); transition: all .2s; }
+.dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); transition: all .2s; cursor: pointer; }
 .dots i.active { background: var(--accent); width: 18px; border-radius: 4px; }
 .trend-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
 .trend-head h2 { margin: 0; }

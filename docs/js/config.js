@@ -10,6 +10,7 @@ export const TYPES = {
   tw_stock:     { label: '台股',           color: '#0891b2', kind: 'stock',   currency: 'TWD', dataset: 'TaiwanStockPrice', closeField: 'close' },
   tw_futures:   { label: '台股期貨',       color: '#f59e0b', kind: 'futures', currency: 'TWD' },
   cash:         { label: '現金',           color: '#94a3b8', kind: 'cash' },
+  liability:    { label: '負債',           color: '#ef4444', kind: 'liability' },
 };
 
 export const CATS = Object.keys(TYPES);
@@ -19,6 +20,7 @@ export const CAT_COLOR = Object.fromEntries(CATS.map(t => [t, TYPES[t].color]));
 export const isStock = t => TYPES[t]?.kind === 'stock';
 export const isFutures = t => TYPES[t]?.kind === 'futures';
 export const isCash = t => TYPES[t]?.kind === 'cash';
+export const isLiability = t => TYPES[t]?.kind === 'liability';
 
 /* 視覺 / 行為常數（取代散落的魔術數字） */
 export const SEG_BORDER = '#ffffff';          // 圓餅圖分段描邊

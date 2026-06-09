@@ -22,12 +22,8 @@
         <button class="settings-btn" id="settingsBtn">
           <span data-icon="settings" data-size="20"></span>
         </button>
-        <div class="ccy-toggle" id="ccyToggle">
-          <button data-ccy="TWD" class="active">TWD</button>
-          <button data-ccy="USD">USD</button>
-        </div>
       </div>
-      <div class="total-label">總資產</div>
+      <div class="total-label" id="totalLabel">總資產</div>
       <div class="total-value" id="totalValue">—</div>
       <div class="total-sub" id="totalPnl"></div>
       <button class="refresh-btn" id="refreshBtn">
@@ -180,6 +176,20 @@
     <div class="modal-backdrop" id="settingsModal">
       <div class="modal">
         <h3>設定</h3>
+        <div class="setting-row">
+          <span class="setting-label">顯示幣別</span>
+          <div class="ccy-toggle" id="ccyToggle">
+            <button data-ccy="TWD" class="active">TWD</button>
+            <button data-ccy="USD">USD</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">資產顯示</span>
+          <div class="ccy-toggle" id="viewToggle">
+            <button data-view="gross" class="active">總資產</button>
+            <button data-view="net">淨資產</button>
+          </div>
+        </div>
         <div class="backup-row">
           <button class="btn-ghost" id="sExport">匯出備份</button>
           <button class="btn-ghost" id="sImport">匯入備份</button>

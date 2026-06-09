@@ -1,5 +1,5 @@
 /* ===== 計算與格式化（接近純函式，僅讀 store）===== */
-import { isCash, isFutures } from './config.js';
+import { isCash, isFutures, isLiability } from './config.js';
 import { store } from './store.js';
 
 export function priceKey(h) {
@@ -21,7 +21,8 @@ export function convert(amount, fromCcy) {
 
 // 回傳單筆持股的計算結果（以顯示幣別）
 export function evalHolding(h) {
-  if (isCash(h.type)) {
+  // 現金與負債同為「金額型」：回傳正值 magnitude，正負由 app 依類別處理
+  if (isCash(h.type) || isLiability(h.type)) {
     return { value: convert(h.amount, h.currency), pnl: null, pnlPct: null, dayPct: null, priceMissing: false };
   }
   if (isFutures(h.type)) {
@@ -64,3 +65,11 @@ export function fmt(n, ccy) {
 }
 
 export function pct(n) { return (n >= 0 ? '+' : '') + n.toFixed(2) + '%'; }
+
+// 縮寫金額（K/M/B），給走勢圖 y 軸用：100000 → US$100K、3101208 → NT$3.1M
+export function fmtCompact(n, ccy) {
+  if (n == null || isNaN(n)) return '';
+  const c = ccy || store.displayCcy;
+  const sym = c === 'TWD' ? 'NT$' : 'US$';
+  return sym + Number(n).toLocaleString('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+}

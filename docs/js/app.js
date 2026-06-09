@@ -10,6 +10,7 @@ import {
   isCash,
   isFutures,
   isStock,
+  isLiability,
 } from "./config.js";
 import { store, save, saveLocal, uid } from "./store.js";
 import {
@@ -19,7 +20,7 @@ import {
   ensureFutInfo,
   suggestMultiplier,
 } from "./api.js";
-import { evalHolding, priceKey, fmt, pct } from "./calc.js";
+import { evalHolding, priceKey, fmt, pct, fmtCompact } from "./calc.js";
 import { Dropdown } from "./dropdown.js";
 import { el } from "./dom.js";
 import { svgIcon, renderIcons } from "./icons.js";
@@ -51,7 +52,9 @@ async function refreshAll() {
   el.refreshBtn.classList.add("loading");
   el.refreshBtn.querySelector(".btn-label").textContent = "更新中…";
   try {
-    const priced = store.state.holdings.filter((h) => !isCash(h.type));
+    const priced = store.state.holdings.filter(
+      (h) => !isCash(h.type) && !isLiability(h.type),
+    );
     let okFx = true;
     const failed = [];
 
@@ -102,21 +105,29 @@ async function refreshAll() {
 function render() {
   const totals = {};
   CATS.forEach((c) => (totals[c] = 0));
-  let total = 0,
+  let gross = 0, // 總資產（不含負債）
+    liabilities = 0, // 負債合計（正值）
     totalPnl = 0,
     hasPnl = false;
   for (const h of store.state.holdings) {
     const r = evalHolding(h);
     if (r.value == null) continue; // 缺報價/匯率：跳過不計入
     totals[h.type] += r.value;
-    total += r.value;
+    if (isLiability(h.type)) {
+      liabilities += r.value;
+    } else {
+      gross += r.value;
+    }
     if (r.pnl != null) {
       totalPnl += r.pnl;
       hasPnl = true;
     }
   }
 
-  el.totalValue.textContent = store.state.holdings.length ? fmt(total) : "—";
+  const view = store.state.settings.assetView || "gross";
+  const shown = view === "net" ? gross - liabilities : gross;
+  if (el.totalLabel) el.totalLabel.textContent = view === "net" ? "淨資產" : "總資產";
+  el.totalValue.textContent = store.state.holdings.length ? fmt(shown) : "—";
   if (hasPnl) {
     const up = totalPnl >= 0;
     el.totalPnl.className = "total-sub " + (up ? "up" : "down");
@@ -126,7 +137,7 @@ function render() {
   }
 
   renderCharts(totals);
-  renderList();
+  renderList(view);
 
   const fx = store.state.cache.fxUSDTWD;
   el.fxLine.textContent = fx
@@ -135,7 +146,7 @@ function render() {
 }
 
 function renderCharts(totals) {
-  const cats = CATS.filter((c) => totals[c] > 0);
+  const cats = CATS.filter((c) => !isLiability(c) && totals[c] > 0);
   const allocData = cats.map((c) => totals[c]);
   const allocColors = cats.map((c) => CAT_COLOR[c]);
 
@@ -209,7 +220,8 @@ function renderTrend() {
           fill: true,
           tension: 0.3,
           borderWidth: 2,
-          pointRadius: rows.length > 40 ? 0 : 3,
+          pointRadius: 0, // 不顯示資料點圓形
+          pointHoverRadius: 4, // 滑過/點到才出現提示點
           pointBackgroundColor: "#4f46e5",
         },
       ],
@@ -237,7 +249,7 @@ function renderTrend() {
             maxTicksLimit: 5,
             color: "#94a3b8",
             font: { size: 11 },
-            callback: (v) => fmt(v),
+            callback: (v) => fmtCompact(v),
           },
         },
       },
@@ -273,7 +285,7 @@ function pnlLine(r) {
   return parts.length ? `<div class="h-pnl">${parts.join("")}</div>` : "";
 }
 
-function renderList() {
+function renderList(view = "gross") {
   if (!store.state.holdings.length) {
     el.holdingsList.innerHTML =
       '<div class="empty">尚無資產，點右下角 ＋ 新增<br>美股、台股或現金</div>';
@@ -281,6 +293,7 @@ function renderList() {
   }
   let html = "";
   for (const cat of CATS) {
+    if (view === "gross" && isLiability(cat)) continue; // 總資產模式：隱藏負債
     const items = store.state.holdings.filter((h) => h.type === cat);
     if (!items.length) continue;
     html += `<div class="group-title">${CAT_LABEL[cat]}</div>`;
@@ -290,10 +303,10 @@ function renderList() {
         right,
         pnlHtml = "",
         name;
-      if (isCash(cat)) {
+      if (isCash(cat) || isLiability(cat)) {
         name = h.name;
         meta = h.currency;
-        right = fmt(r.value);
+        right = (isLiability(cat) ? "−" : "") + fmt(r.value);
       } else if (isFutures(cat)) {
         name = h.name || h.code;
         const lotTxt = `${h.lots > 0 ? "多" : "空"} ${Math.abs(h.lots)} 口`;
@@ -415,9 +428,8 @@ function syncFormFields() {
   document.querySelector(".field-stock").style.display = isStock(t)
     ? "block"
     : "none";
-  document.querySelector(".field-cash").style.display = isCash(t)
-    ? "block"
-    : "none";
+  document.querySelector(".field-cash").style.display =
+    isCash(t) || isLiability(t) ? "block" : "none";
   document.querySelector(".field-futures").style.display = isFutures(t)
     ? "block"
     : "none";
@@ -426,10 +438,10 @@ function syncFormFields() {
 function saveForm() {
   const type = ddType.value;
   let h;
-  if (isCash(type)) {
+  if (isCash(type) || isLiability(type)) {
     const name = el.fName.value.trim();
     const amount = parseFloat(el.fAmount.value);
-    if (!name || isNaN(amount)) return alert("請填寫帳戶名稱與金額");
+    if (!name || isNaN(amount)) return alert("請填寫名稱與金額");
     h = { type, name, currency: ddCurrency.value, amount };
   } else if (isFutures(type)) {
     if (!selectedFut) return alert("請先搜尋並選擇期貨商品");
@@ -472,7 +484,7 @@ function saveForm() {
   save();
   closeForm();
   render();
-  if (!isCash(type)) refreshAll(); // 新增/編輯股票/期貨後自動抓一次報價
+  if (!isCash(type) && !isLiability(type)) refreshAll(); // 股票/期貨才需抓報價
 }
 
 function deleteHolding() {
@@ -516,6 +528,7 @@ function importData(file) {
       store.displayCcy = store.state.settings.defaultCcy;
       save();
       setCcyButtons();
+      setViewButtons();
       render();
       alert("匯入成功");
     } catch (e) {
@@ -532,6 +545,14 @@ function setCcyButtons() {
     .forEach((b) =>
       b.classList.toggle("active", b.dataset.ccy === store.displayCcy),
     );
+}
+
+/* ---------- 淨資產 / 總資產 切換 ---------- */
+function setViewButtons() {
+  const view = store.state.settings.assetView || "gross";
+  el.viewToggle
+    .querySelectorAll("button")
+    .forEach((b) => b.classList.toggle("active", b.dataset.view === view));
 }
 
 /* ---------- 事件綁定 ---------- */
@@ -559,6 +580,16 @@ el.ccyToggle.addEventListener("click", (e) => {
   renderTrend(); // 走勢圖跟著切換幣別（用已快取資料，不重抓）
 });
 
+// 淨資產 / 總資產 切換
+el.viewToggle.addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  store.state.settings.assetView = b.dataset.view;
+  save();
+  setViewButtons();
+  render();
+});
+
 // 圖表輪播：滑動時更新指示點，切到走勢圖時校正尺寸
 el.chartCarousel.addEventListener("scroll", () => {
   const idx = Math.round(
@@ -569,6 +600,48 @@ el.chartCarousel.addEventListener("scroll", () => {
   );
   if (idx === 1 && trendChart) trendChart.resize();
 });
+
+// 捲到指定頁
+function scrollToSlide(idx) {
+  const w = el.chartCarousel.clientWidth || 1;
+  el.chartCarousel.scrollTo({ left: idx * w, behavior: "smooth" });
+}
+
+// 指示點可點擊切換
+[...el.chartDots.children].forEach((dot, i) =>
+  dot.addEventListener("click", () => scrollToSlide(i)),
+);
+
+// 桌機：滑鼠拖曳左右切換（手機原生觸控滑動不受影響）
+let dragX = null,
+  dragScroll = 0,
+  dragged = false;
+el.chartCarousel.addEventListener("pointerdown", (e) => {
+  if (e.pointerType === "touch") return; // 觸控交給原生捲動
+  dragX = e.clientX;
+  dragScroll = el.chartCarousel.scrollLeft;
+  dragged = false;
+  el.chartCarousel.classList.add("dragging");
+});
+window.addEventListener("pointermove", (e) => {
+  if (dragX === null) return;
+  const dx = e.clientX - dragX;
+  if (Math.abs(dx) > 3) dragged = true;
+  el.chartCarousel.scrollLeft = dragScroll - dx;
+});
+window.addEventListener("pointerup", () => {
+  if (dragX === null) return;
+  dragX = null;
+  el.chartCarousel.classList.remove("dragging");
+  if (dragged) scrollToSlide(Math.round(el.chartCarousel.scrollLeft / (el.chartCarousel.clientWidth || 1)));
+});
+// 拖曳放開後若在圖上，避免誤觸（拖動視為非點擊）
+el.chartCarousel.addEventListener("click", (e) => {
+  if (dragged) {
+    e.stopPropagation();
+    e.preventDefault();
+  }
+}, true);
 
 // 走勢圖區間切換
 el.rangeToggle.addEventListener("click", (e) => {
@@ -671,13 +744,14 @@ async function bootSync() {
   }
   store.displayCcy = store.state.settings?.defaultCcy || "TWD";
   setCcyButtons();
+  setViewButtons();
   render();
   maybeRefreshStale();
   loadHistory(trendDays); // 載入每日結算歷史，畫走勢圖
 }
 
 function maybeRefreshStale() {
-  if (store.state.holdings.some((h) => !isCash(h.type))) {
+  if (store.state.holdings.some((h) => !isCash(h.type) && !isLiability(h.type))) {
     const stale =
       !store.state.cache.lastUpdate ||
       Date.now() - store.state.cache.lastUpdate > STALE_MS;
@@ -698,6 +772,7 @@ el.logoutBtn.addEventListener("click", () => {
 /* ---------- 啟動 ---------- */
 renderIcons(); // 把 HTML 內的 data-icon 換成 Lucide SVG
 setCcyButtons();
+setViewButtons();
 render(); // 先以本機資料渲染（未登入時登入框會蓋在上層）
 
 store.onSave = schedulePush; // 每次本機存檔後自動排程推送
