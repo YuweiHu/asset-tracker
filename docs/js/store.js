@@ -13,7 +13,7 @@ function loadState() {
   }
   return {
     holdings: [],
-    settings: { defaultCcy: 'TWD', assetView: 'gross' },
+    settings: { defaultCcy: 'TWD', assetView: 'gross', theme: 'light' },
     cache: { prices: {}, fxUSDTWD: null },
     meta: { updatedAt: 0 }
   };

@@ -11,7 +11,21 @@
     <meta name="apple-mobile-web-app-title" content="資產" />
     <meta name="theme-color" content="#ffffff" />
     <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png" />
+    <link rel="shortcut icon" href="icons/icon-192.png" />
     <link rel="apple-touch-icon" href="icons/icon-180.png" />
+    <script>
+      // 在 CSS 套用前先設好主題，避免深色模式重整時閃一下白
+      try {
+        var s = JSON.parse(localStorage.getItem("assetTracker.v1"));
+        if (s && s.settings && s.settings.theme === "dark") {
+          document.documentElement.dataset.theme = "dark";
+          var m = document.querySelector('meta[name="theme-color"]');
+          if (m) m.content = "#1e293b";
+        }
+      } catch (e) {}
+    </script>
     <link rel="stylesheet" href="styles.css" />
     <title>資產管理</title>
   </head>
@@ -43,6 +57,16 @@
             <div class="legend" id="allocLegend"></div>
           </div>
           <div class="slide">
+            <h2>台股配置</h2>
+            <div class="chart-wrap"><canvas id="twChart"></canvas></div>
+            <div class="legend" id="twLegend"></div>
+          </div>
+          <div class="slide">
+            <h2>美股配置</h2>
+            <div class="chart-wrap"><canvas id="usChart"></canvas></div>
+            <div class="legend" id="usLegend"></div>
+          </div>
+          <div class="slide">
             <div class="trend-head">
               <h2>資產走勢</h2>
               <div class="range-toggle" id="rangeToggle">
@@ -55,7 +79,9 @@
             <div class="trend-meta" id="trendMeta"></div>
           </div>
         </div>
-        <div class="dots" id="chartDots"><i class="active"></i><i></i></div>
+        <div class="dots" id="chartDots">
+          <i class="active"></i><i></i><i></i><i></i>
+        </div>
       </section>
 
       <!-- 持股列表 -->
@@ -188,6 +214,13 @@
           <div class="ccy-toggle" id="viewToggle">
             <button data-view="gross" class="active">總資產</button>
             <button data-view="net">淨資產</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">深色模式</span>
+          <div class="ccy-toggle" id="themeToggle">
+            <button data-theme="light" class="active">淺色</button>
+            <button data-theme="dark">深色</button>
           </div>
         </div>
         <div class="backup-row">

@@ -4,11 +4,12 @@
  */
 const IDS = [
   'refreshBtn', 'totalLabel', 'totalValue', 'totalPnl', 'allocChart', 'allocLegend', 'holdingsList', 'fxLine',
+  'twChart', 'twLegend', 'usChart', 'usLegend',
   'trendChart', 'chartCarousel', 'chartDots', 'rangeToggle', 'trendMeta',
   'formModal', 'formTitle', 'fDelete', 'fSymbol', 'fShares', 'fAvgCost', 'fName', 'fAmount',
   'fFutSearch', 'fFutResults', 'fFutSelected', 'fFutLots', 'fFutMult', 'fFutEntry', 'fFutMargin',
   'fabAdd', 'fCancel', 'fSave', 'settingsBtn', 'settingsModal', 'sClose', 'sExport',
-  'sImport', 'sImportFile', 'ccyToggle', 'viewToggle',
+  'sImport', 'sImportFile', 'ccyToggle', 'viewToggle', 'themeToggle',
   'loginOverlay', 'loginUser', 'loginPass', 'loginBtn', 'loginErr', 'logoutBtn', 'syncStatus',
 ];
 

@@ -38,6 +38,8 @@ import {
 
 let editingId = null;
 let allocChart = null;
+let twChart = null; // 台股配置
+let usChart = null; // 美股配置
 let trendChart = null;
 let historyData = []; // 每日結算快照（依時間排序）
 let trendDays = 90; // 走勢圖區間
@@ -145,41 +147,92 @@ function render() {
     : "尚未取得匯率";
 }
 
-function renderCharts(totals) {
-  const cats = CATS.filter((c) => !isLiability(c) && totals[c] > 0);
-  const allocData = cats.map((c) => totals[c]);
-  const allocColors = cats.map((c) => CAT_COLOR[c]);
+// 個股圓餅用色盤（依序分配）
+const PIE_PALETTE = [
+  "#4f46e5", "#0891b2", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6",
+  "#ec4899", "#14b8a6", "#f97316", "#6366f1", "#84cc16", "#06b6d4",
+];
 
-  if (allocChart) allocChart.destroy();
-  allocChart = new window.Chart(el.allocChart, {
+// 通用甜甜圈圖（tooltip 顯示格式化金額）
+function doughnut(canvas, labels, data, colors) {
+  // 分段描邊用卡片底色 → 深淺主題都與卡片無縫
+  const seg =
+    getComputedStyle(document.documentElement).getPropertyValue("--card").trim() ||
+    SEG_BORDER;
+  return new window.Chart(canvas, {
     type: "doughnut",
     data: {
-      labels: cats.map((c) => CAT_LABEL[c]),
+      labels,
       datasets: [
-        {
-          data: allocData,
-          backgroundColor: allocColors,
-          borderColor: SEG_BORDER,
-          borderWidth: 2,
-        },
+        { data, backgroundColor: colors, borderColor: seg, borderWidth: 2 },
       ],
     },
     options: {
       cutout: "62%",
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => ` ${ctx.label} ${fmt(ctx.parsed)}` } },
+      },
       animation: { duration: CHART_ANIM_MS },
     },
   });
-  const total = allocData.reduce((a, b) => a + b, 0) || 1;
+}
+
+// 個股配置圓餅：把指定類別的持股按 symbol 彙整市值，回傳新圖（無持股回 null）
+function renderStockPie(canvas, legendEl, types, prevChart) {
+  if (prevChart) prevChart.destroy();
+  const map = {};
+  for (const h of store.state.holdings) {
+    if (!types.includes(h.type)) continue;
+    const r = evalHolding(h);
+    if (r.value == null || r.value <= 0) continue;
+    map[h.symbol] = (map[h.symbol] || 0) + r.value;
+  }
+  const syms = Object.keys(map);
+  if (!syms.length) {
+    legendEl.innerHTML = '<span style="color:var(--muted)">尚無持股</span>';
+    return null;
+  }
+  const colors = syms.map((_, i) => PIE_PALETTE[i % PIE_PALETTE.length]);
+  const total = syms.reduce((a, s) => a + map[s], 0) || 1;
+  legendEl.innerHTML = syms
+    .map(
+      (s, i) =>
+        `<span><i style="background:${colors[i]}"></i>${s} ${((map[s] / total) * 100).toFixed(1)}%</span>`,
+    )
+    .join("");
+  return doughnut(canvas, syms, syms.map((s) => map[s]), colors);
+}
+
+function renderCharts(totals) {
+  // 1) 總資產配置（依類別，不含負債）
+  const cats = CATS.filter((c) => !isLiability(c) && totals[c] > 0);
+  if (allocChart) allocChart.destroy();
+  allocChart = doughnut(
+    el.allocChart,
+    cats.map((c) => CAT_LABEL[c]),
+    cats.map((c) => totals[c]),
+    cats.map((c) => CAT_COLOR[c]),
+  );
+  const allocTotal = cats.reduce((a, c) => a + totals[c], 0) || 1;
   el.allocLegend.innerHTML =
     cats
       .map(
         (c) =>
-          `<span><i style="background:${CAT_COLOR[c]}"></i>${CAT_LABEL[c]} ${((totals[c] / total) * 100).toFixed(1)}%</span>`,
+          `<span><i style="background:${CAT_COLOR[c]}"></i>${CAT_LABEL[c]} ${((totals[c] / allocTotal) * 100).toFixed(1)}%</span>`,
       )
       .join("") || '<span style="color:var(--muted)">尚無資料</span>';
+
+  // 2) 台股配置　3) 美股配置（各股占比）
+  twChart = renderStockPie(el.twChart, el.twLegend, ["tw_stock"], twChart);
+  usChart = renderStockPie(
+    el.usChart,
+    el.usLegend,
+    ["us_stock", "us_firstrade"],
+    usChart,
+  );
 }
 
 /* ---------- 資產走勢 ---------- */
@@ -207,6 +260,9 @@ function renderTrend() {
     el.trendMeta.textContent = "尚無歷史資料，每日收盤後會自動記錄";
     return;
   }
+
+  const dark = document.documentElement.dataset.theme === "dark";
+  const gridColor = dark ? "rgba(148,163,184,.18)" : "#f1f5f9";
 
   trendChart = new window.Chart(el.trendChart, {
     type: "line",
@@ -244,7 +300,7 @@ function renderTrend() {
           ticks: { maxTicksLimit: 6, color: "#94a3b8", font: { size: 11 } },
         },
         y: {
-          grid: { color: "#f1f5f9" },
+          grid: { color: gridColor },
           ticks: {
             maxTicksLimit: 5,
             color: "#94a3b8",
@@ -527,8 +583,10 @@ function importData(file) {
         store.state.cache = { prices: {}, fxUSDTWD: null };
       store.displayCcy = store.state.settings.defaultCcy;
       save();
+      applyTheme(store.state.settings.theme || "light");
       setCcyButtons();
       setViewButtons();
+      setThemeButtons();
       render();
       alert("匯入成功");
     } catch (e) {
@@ -553,6 +611,20 @@ function setViewButtons() {
   el.viewToggle
     .querySelectorAll("button")
     .forEach((b) => b.classList.toggle("active", b.dataset.view === view));
+}
+
+/* ---------- 深色模式 ---------- */
+function applyTheme(theme) {
+  const dark = theme === "dark";
+  document.documentElement.dataset.theme = dark ? "dark" : "";
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = dark ? "#1e293b" : "#ffffff";
+}
+function setThemeButtons() {
+  const theme = store.state.settings.theme || "light";
+  el.themeToggle
+    .querySelectorAll("button")
+    .forEach((b) => b.classList.toggle("active", b.dataset.theme === theme));
 }
 
 /* ---------- 事件綁定 ---------- */
@@ -590,6 +662,18 @@ el.viewToggle.addEventListener("click", (e) => {
   render();
 });
 
+// 深色 / 淺色 切換
+el.themeToggle.addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  store.state.settings.theme = b.dataset.theme;
+  save();
+  applyTheme(b.dataset.theme);
+  setThemeButtons();
+  render(); // 重畫圓餅（描邊色）
+  renderTrend(); // 重畫走勢（格線色）
+});
+
 // 圖表輪播：滑動時更新指示點，切到走勢圖時校正尺寸
 el.chartCarousel.addEventListener("scroll", () => {
   const idx = Math.round(
@@ -598,7 +682,7 @@ el.chartCarousel.addEventListener("scroll", () => {
   [...el.chartDots.children].forEach((d, i) =>
     d.classList.toggle("active", i === idx),
   );
-  if (idx === 1 && trendChart) trendChart.resize();
+  if (idx === 3 && trendChart) trendChart.resize();
 });
 
 // 捲到指定頁
@@ -618,6 +702,8 @@ let dragX = null,
   dragged = false;
 el.chartCarousel.addEventListener("pointerdown", (e) => {
   if (e.pointerType === "touch") return; // 觸控交給原生捲動
+  // 桌面並排（grid）時不可橫向捲動 → 不啟用拖曳
+  if (el.chartCarousel.scrollWidth <= el.chartCarousel.clientWidth) return;
   dragX = e.clientX;
   dragScroll = el.chartCarousel.scrollLeft;
   dragged = false;
@@ -743,8 +829,10 @@ async function bootSync() {
     renderSyncStatus({ status: "offline" }); // 離線：用本機資料，不阻擋
   }
   store.displayCcy = store.state.settings?.defaultCcy || "TWD";
+  applyTheme(store.state.settings?.theme || "light");
   setCcyButtons();
   setViewButtons();
+  setThemeButtons();
   render();
   maybeRefreshStale();
   loadHistory(trendDays); // 載入每日結算歷史，畫走勢圖
@@ -771,8 +859,10 @@ el.logoutBtn.addEventListener("click", () => {
 
 /* ---------- 啟動 ---------- */
 renderIcons(); // 把 HTML 內的 data-icon 換成 Lucide SVG
+applyTheme(store.state.settings.theme || "light");
 setCcyButtons();
 setViewButtons();
+setThemeButtons();
 render(); // 先以本機資料渲染（未登入時登入框會蓋在上層）
 
 store.onSave = schedulePush; // 每次本機存檔後自動排程推送
