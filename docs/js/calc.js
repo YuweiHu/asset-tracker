@@ -66,6 +66,14 @@ export function fmt(n, ccy) {
 
 export function pct(n) { return (n >= 0 ? '+' : '') + n.toFixed(2) + '%'; }
 
+// 單股/單位價格：固定 2 位小數，不像 fmt() 對 TWD 捨去小數（總額才捨去）
+export function fmtPrice(n, ccy) {
+  if (n == null || isNaN(n)) return '—';
+  const c = ccy || store.displayCcy;
+  const sym = c === 'TWD' ? 'NT$' : 'US$';
+  return sym + n.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+}
+
 // 縮寫金額（K/M/B），給走勢圖 y 軸用：100000 → US$100K、3101208 → NT$3.1M
 export function fmtCompact(n, ccy) {
   if (n == null || isNaN(n)) return '';

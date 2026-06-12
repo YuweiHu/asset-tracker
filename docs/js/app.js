@@ -20,7 +20,7 @@ import {
   ensureFutInfo,
   suggestMultiplier,
 } from "./api.js";
-import { evalHolding, priceKey, fmt, pct, fmtCompact } from "./calc.js";
+import { evalHolding, priceKey, fmt, pct, fmtCompact, fmtPrice } from "./calc.js";
 import { Dropdown } from "./dropdown.js";
 import { el } from "./dom.js";
 import { svgIcon, renderIcons } from "./icons.js";
@@ -323,7 +323,7 @@ function renderList(view = "gross") {
         name = h.symbol;
         meta =
           `${h.shares} 股` +
-          (r.price != null ? `<br>@ ${fmt(r.price, r.ccy)}` : "");
+          (r.price != null ? `<br>@ ${fmtPrice(r.price, r.ccy)}` : "");
         right = r.priceMissing
           ? '<span style="color:var(--muted)">待更新</span>'
           : fmt(r.value);
