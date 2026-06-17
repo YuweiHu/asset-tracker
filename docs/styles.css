@@ -61,7 +61,8 @@ body {
   overscroll-behavior: none;
 }
 
-/* 固定白條蓋住 iOS 狀態列：捲動的內容會被遮在底下，不與時間/Wi-Fi 文字重疊 */
+/* 固定白條蓋住 iOS 狀態列：永遠在最上層（蓋過 sidebar/scrim/彈窗/登入），
+ * 安全區一律維持卡片色；pointer-events:none 才不會擋到頂部點擊。 */
 body::before {
   content: "";
   position: fixed;
@@ -70,7 +71,8 @@ body::before {
   right: 0;
   height: env(safe-area-inset-top);
   background: var(--card);
-  z-index: 100;
+  z-index: 9999;
+  pointer-events: none;
 }
 
 /* ===== 殼 / 側欄 / 視圖 ===== */
