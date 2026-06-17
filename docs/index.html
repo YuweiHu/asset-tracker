@@ -30,14 +30,35 @@
     <title>資產管理</title>
   </head>
   <body>
-    <!-- 頂部總資產 -->
-    <header class="topbar">
-      <div class="topbar-row">
-        <button class="settings-btn" id="settingsBtn">
-          <span data-icon="settings" data-size="20"></span>
-        </button>
-      </div>
-      <div class="total-label" id="totalLabel">總資產</div>
+    <div class="shell">
+      <!-- 側欄：桌面固定、手機漢堡抽屜 -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">資產管理</div>
+        <nav class="sidebar-nav">
+          <button class="nav-item active" data-view="assets">
+            <span data-icon="pie-chart" data-size="18"></span>資產追蹤
+          </button>
+          <button class="nav-item" data-view="futures">
+            <span data-icon="trending-up" data-size="18"></span>期貨計算機
+          </button>
+        </nav>
+      </aside>
+      <div class="scrim" id="sidebarScrim"></div>
+
+      <div class="content">
+        <!-- ===== 視圖：資產追蹤 ===== -->
+        <section class="view active" id="view-assets" data-view="assets">
+          <!-- 頂部總資產 -->
+          <header class="topbar">
+            <div class="topbar-row">
+              <button class="hamburger" aria-label="開啟選單">
+                <span data-icon="menu" data-size="22"></span>
+              </button>
+              <div class="total-label" id="totalLabel">總資產</div>
+              <button class="settings-btn" id="settingsBtn">
+                <span data-icon="settings" data-size="20"></span>
+              </button>
+            </div>
       <div class="total-value" id="totalValue">—</div>
       <div class="total-sub" id="totalPnl"></div>
       <button class="refresh-btn" id="refreshBtn">
@@ -88,10 +109,113 @@
       <section class="card" id="holdingsList"></section>
     </main>
 
-    <!-- 浮動新增鈕 -->
-    <button class="fab" id="fabAdd">
-      <span data-icon="plus" data-size="26"></span>
-    </button>
+          <!-- 浮動新增鈕 -->
+          <button class="fab" id="fabAdd">
+            <span data-icon="plus" data-size="26"></span>
+          </button>
+        </section>
+
+        <!-- ===== 視圖：期貨計算機 ===== -->
+        <section class="view" id="view-futures" data-view="futures">
+          <header class="topbar">
+            <div class="topbar-row">
+              <button class="hamburger" aria-label="開啟選單">
+                <span data-icon="menu" data-size="22"></span>
+              </button>
+              <div class="total-label">期貨計算機</div>
+              <span class="hamburger" aria-hidden="true" style="visibility: hidden"></span>
+            </div>
+          </header>
+          <main>
+            <section class="card fc">
+              <h2>保證金追繳計算機</h2>
+              <label
+                ><span data-icon="search" data-size="14" class="lbl-icon"></span
+                >期貨商品（選填，帶入現價與乘數）
+                <input
+                  id="fcFutSearch"
+                  placeholder="輸入名稱，如 小型臺指、聯發科"
+                />
+              </label>
+              <div class="fut-results" id="fcFutResults"></div>
+              <div class="fut-selected" id="fcFutSelected"></div>
+              <p class="hint" id="fcCurPrice"></p>
+              <p class="hint" id="fcMarginInfo"></p>
+
+              <div class="setting-row">
+                <span class="setting-label">方向</span>
+                <div class="ccy-toggle" id="fcDir">
+                  <button data-dir="long" class="active">做多</button>
+                  <button data-dir="short">做空</button>
+                </div>
+              </div>
+
+              <label
+                >成本價（進場價）
+                <input
+                  id="fcEntry"
+                  type="number"
+                  inputmode="decimal"
+                  placeholder="例如 18000"
+              /></label>
+              <label
+                >口數
+                <input
+                  id="fcLots"
+                  type="number"
+                  inputmode="numeric"
+                  placeholder="1"
+              /></label>
+              <label
+                >每口乘數（選商品自動帶入，可改）
+                <input
+                  id="fcMult"
+                  type="number"
+                  inputmode="decimal"
+                  placeholder="小台=50 ・ 大台=200"
+              /></label>
+              <label
+                >投入保證金（你要放的錢，NT$）
+                <input
+                  id="fcDeposit"
+                  type="number"
+                  inputmode="numeric"
+                  placeholder="選商品自動帶入原始保證金，可調高更安全"
+              /></label>
+            </section>
+
+            <section class="card fc-result" id="fcResult">
+              <div class="fc-h-label">追繳保證金價（margin call）</div>
+              <div class="fc-h-value" id="fcCallPrice">—</div>
+              <div class="fc-h-dist" id="fcCallDist"></div>
+              <div class="fc-rows">
+                <div class="fc-row">
+                  <span>強制平倉 / 歸零價</span>
+                  <span id="fcLiqPrice">—</span>
+                </div>
+                <div class="fc-row">
+                  <span>距強平</span><span id="fcLiqDist">—</span>
+                </div>
+                <div class="fc-row">
+                  <span>有效槓桿</span><span id="fcEffLev">—</span>
+                </div>
+                <div class="fc-row">
+                  <span>維持保證金（追繳門檻）</span><span id="fcMaintShow">—</span>
+                </div>
+                <div class="fc-row">
+                  <span>原始保證金（最低投入）</span><span id="fcInitShow">—</span>
+                </div>
+              </div>
+              <p class="hint" style="margin-top: 12px">
+                追繳價＝權益（投入＋損益）跌破期交所維持保證金的價位。維持／原始保證金取自期交所即時資料；投入愈多、追繳價愈遠。
+              </p>
+            </section>
+          </main>
+        </section>
+      </div>
+      <!-- /.content -->
+    </div>
+    <!-- /.shell -->
 
     <!-- 新增/編輯彈窗 -->
     <div class="modal-backdrop" id="formModal">

@@ -11,6 +11,11 @@ const IDS = [
   'fabAdd', 'fCancel', 'fSave', 'settingsBtn', 'settingsModal', 'sClose', 'sExport',
   'sImport', 'sImportFile', 'ccyToggle', 'viewToggle', 'themeToggle',
   'loginOverlay', 'loginUser', 'loginPass', 'loginBtn', 'loginErr', 'logoutBtn', 'syncStatus',
+  'sidebar', 'sidebarScrim',
+  // 期貨計算機
+  'fcFutSearch', 'fcFutResults', 'fcFutSelected', 'fcCurPrice', 'fcMarginInfo', 'fcDir',
+  'fcEntry', 'fcLots', 'fcMult', 'fcDeposit',
+  'fcCallPrice', 'fcCallDist', 'fcLiqPrice', 'fcLiqDist', 'fcEffLev', 'fcMaintShow', 'fcInitShow',
 ];
 
 export const el = {};

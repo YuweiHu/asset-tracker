@@ -12,6 +12,7 @@
  */
 
 import { settle } from './settle.js';
+import { getMargins } from './margins.js';
 
 const enc = new TextEncoder();
 const TOKEN_TTL_SEC = 30 * 24 * 60 * 60; // 30 天
@@ -104,6 +105,15 @@ export default {
     // 健康檢查（免認證）
     if (url.pathname === '/' || url.pathname === '/health') {
       return json({ ok: true, service: 'asset-sync' });
+    }
+
+    // 期交所保證金一覽（公開、代理 + 每日快取、補 CORS）
+    if (url.pathname === '/margins' && req.method === 'GET') {
+      try {
+        return json(await getMargins(env));
+      } catch (e) {
+        return json({ error: 'margins fetch failed: ' + (e && e.message) }, 502);
+      }
     }
 
     // 手動觸發結算（給 cron 金鑰，非 JWT；供測試/補算用）

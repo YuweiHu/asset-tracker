@@ -1,10 +1,13 @@
 /* Service Worker — 快取靜態資源，讓 PWA 可離線開啟 */
-const CACHE = 'asset-tracker-v28';
+const CACHE = 'asset-tracker-v35';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './js/app.js',
+  './js/assets.js',
+  './js/router.js',
+  './js/futures.js',
   './js/config.js',
   './js/store.js',
   './js/api.js',
