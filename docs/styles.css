@@ -73,6 +73,9 @@ body::before {
   background: var(--card);
   z-index: 9999;
   pointer-events: none;
+  /* 提升為獨立合成層：避免 iOS 對 fixed 元素的重繪殘留（抽屜/scrim 開關後仍維持白底） */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 /* ===== 殼 / 側欄 / 視圖 ===== */
