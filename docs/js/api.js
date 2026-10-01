@@ -1,10 +1,12 @@
-/* ===== 對外資料抓取 — 單一來源 FinMind =====
- * 美股 USStockPrice / 台股 TaiwanStockPrice / 期貨 TaiwanFuturesDaily / 匯率 TaiwanExchangeRate
- * FinMind 原生支援 CORS（Access-Control-Allow-Origin: *），直連、不需代理、免金鑰。
- * 資料皆為每日盤後（EOD）；美股可能因時差延遲約一天。
+/* ===== 對外資料抓取 =====
+ * 美股：Yahoo Finance（經 Worker /quotes 代理，盤中即時、收盤後立即更新）
+ * 台股 TaiwanStockPrice / 期貨 TaiwanFuturesDaily / 匯率 TaiwanExchangeRate：FinMind
+ *   FinMind 原生支援 CORS，直連、免金鑰；資料為每日盤後（EOD）。
+ *   （FinMind 的美股資料會落後 1～2 天且各檔不一致，故不用。）
  */
 import { TYPES, FINMIND_API, PRICE_LOOKBACK_DAYS, FUT_LOOKBACK_DAYS } from './config.js';
 import { store, save } from './store.js';
+import { fetchQuotes } from './sync.js';
 
 export async function fetchJson(url) {
   const res = await fetch(url);
@@ -24,9 +26,24 @@ function lookbackDate(days) {
   return new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
 }
 
-// 股價（美股 / 台股）：取最近兩個交易日，算最新收盤與今日漲跌
+// 美股批次報價：回傳 { 代號: {price,prevClose,currency} | {error} }，一次請求取得全部
+export async function fetchUsQuotes(symbols) {
+  const raw = await fetchQuotes(symbols);
+  const out = {};
+  for (const [sym, q] of Object.entries(raw)) {
+    out[sym] = q.error ? { error: q.error } : { price: q.price, prevClose: q.prevClose, currency: 'USD' };
+  }
+  return out;
+}
+
+// 股價：美股走 Yahoo；台股取 FinMind 最近兩個交易日，算最新收盤與今日漲跌
 export async function fetchPrice(h) {
   const cfg = TYPES[h.type];
+  if (cfg.quote === 'yahoo') {
+    const q = (await fetchUsQuotes([h.symbol]))[h.symbol];
+    if (!q || q.error) throw new Error((q && q.error) || '無報價');
+    return q;
+  }
   const rows = await finmind({ dataset: cfg.dataset, data_id: h.symbol, start_date: lookbackDate(PRICE_LOOKBACK_DAYS) });
   const valid = rows
     .filter(r => r[cfg.closeField] > 0)

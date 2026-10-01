@@ -13,6 +13,7 @@
 
 import { settle } from './settle.js';
 import { getMargins } from './margins.js';
+import { getQuotes } from './quotes.js';
 
 const enc = new TextEncoder();
 const TOKEN_TTL_SEC = 30 * 24 * 60 * 60; // 30 天
@@ -145,6 +146,12 @@ export default {
       }
     }
 
+    // 美股報價（Yahoo 代理）：/quotes?symbols=AAPL,VOO
+    if (url.pathname === '/quotes' && req.method === 'GET') {
+      const symbols = (url.searchParams.get('symbols') || '').split(',');
+      return json({ quotes: await getQuotes(symbols) });
+    }
+
     // 歷史快照：查區間（以 ts 過濾、排序）
     if (url.pathname === '/history' && req.method === 'GET') {
       const days = Math.min(parseInt(url.searchParams.get('days') || '90', 10) || 90, 3650);
@@ -162,7 +169,7 @@ export default {
 
   // 每日結算（cron）：依觸發的排程決定場次（台股 / 美股）
   async scheduled(event, env, ctx) {
-    const session = event.cron === '0 21 * * 1-5' ? 'us' : 'tw';
+    const session = event.cron === '30 21 * * 1-5' ? 'us' : 'tw';
     ctx.waitUntil(
       settle(env, session).catch((e) => console.log('settle error:', e && e.message))
     );

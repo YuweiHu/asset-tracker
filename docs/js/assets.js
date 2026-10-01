@@ -17,6 +17,7 @@ import {
 import { store, save, saveLocal, uid } from "./store.js";
 import {
   fetchPrice,
+  fetchUsQuotes,
   fetchFx,
   fetchFuturesPrice,
   ensureFutInfo,
@@ -73,10 +74,27 @@ async function refreshAll() {
       okFx = false;
     }
 
-    // 股價 / 期貨報價（逐一抓，避免被限流）
+    // 美股：一次批次向 Worker（Yahoo）取得全部報價
+    const usSymbols = [
+      ...new Set(priced.filter((h) => TYPES[h.type].quote === "yahoo").map((h) => h.symbol)),
+    ];
+    let usQuotes = {};
+    if (usSymbols.length) {
+      try {
+        usQuotes = await fetchUsQuotes(usSymbols);
+      } catch (e) {
+        // 整批失敗 → 下方逐檔標記失敗
+      }
+    }
+
+    // 台股 / 期貨報價（逐一抓，避免被限流）
     for (const h of priced) {
       try {
-        if (isFutures(h.type)) {
+        if (TYPES[h.type].quote === "yahoo") {
+          const q = usQuotes[h.symbol];
+          if (!q || q.error) throw new Error((q && q.error) || "無報價");
+          store.state.cache.prices[priceKey(h)] = { ...q, ts: Date.now() };
+        } else if (isFutures(h.type)) {
           store.state.cache.prices[priceKey(h)] = await fetchFuturesPrice(
             h.code,
           );
@@ -98,7 +116,6 @@ async function refreshAll() {
       const msg = [];
       if (failed.length) msg.push("股價抓取失敗: " + failed.join(", "));
       if (!okFx) msg.push("匯率抓取失敗");
-      msg.push("\n若持續失敗，請到設定填入 CORS 代理網址。");
       alert(msg.join("\n"));
     }
   } finally {

@@ -1,5 +1,5 @@
 /**
- * 每日結算：讀 KV 持倉 → 抓 FinMind 收盤價/匯率 → 估值 → 寫一筆快照到 D1。
+ * 每日結算：讀 KV 持倉 → 抓收盤價（美股 Yahoo、台股/期貨/匯率 FinMind）→ 估值 → 寫一筆快照到 D1。
  * 估值邏輯與前端 calc.js 一致：
  *   股票  = 收盤價 × 股數（美股再乘匯率換台幣）
  *   期貨  = 保證金 + 未實現損益((price-entry)×乘數×口數)
@@ -8,13 +8,15 @@
  * 全部以台幣為基準，total_twd/total_usd = 總資產（不含負債），breakdown 各類別存正值。
  * （淨資產由前端用 total − breakdown.liability 計算，走勢圖維持總資產。）
  */
+import { yahooQuote } from './quotes.js';
+
 const FINMIND = 'https://api.finmindtrade.com/api/v4/data';
 const PRICE_LOOKBACK_DAYS = 14;
 const FUT_LOOKBACK_DAYS = 12;
 
 const TYPES = {
-  us_stock: { kind: 'stock', currency: 'USD', dataset: 'USStockPrice', closeField: 'Close' },
-  us_firstrade: { kind: 'stock', currency: 'USD', dataset: 'USStockPrice', closeField: 'Close' },
+  us_stock: { kind: 'stock', currency: 'USD', quote: 'yahoo' },
+  us_firstrade: { kind: 'stock', currency: 'USD', quote: 'yahoo' },
   tw_stock: { kind: 'stock', currency: 'TWD', dataset: 'TaiwanStockPrice', closeField: 'close' },
   tw_futures: { kind: 'futures', currency: 'TWD' },
   cash: { kind: 'cash' },
@@ -34,6 +36,7 @@ async function finmind(params) {
   return data.data || [];
 }
 async function fetchStockClose(cfg, symbol) {
+  if (cfg.quote === 'yahoo') return (await yahooQuote(symbol)).price;
   const rows = await finmind({
     dataset: cfg.dataset,
     data_id: symbol,

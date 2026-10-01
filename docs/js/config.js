@@ -5,8 +5,8 @@
 export const STORE_KEY = 'assetTracker.v1';
 
 export const TYPES = {
-  us_stock:     { label: '美股複委託',     color: '#4f46e5', kind: 'stock',   currency: 'USD', dataset: 'USStockPrice',    closeField: 'Close' },
-  us_firstrade: { label: '美股 Firstrade', color: '#7c3aed', kind: 'stock',   currency: 'USD', dataset: 'USStockPrice',    closeField: 'Close' },
+  us_stock:     { label: '美股複委託',     color: '#4f46e5', kind: 'stock',   currency: 'USD', quote: 'yahoo' },
+  us_firstrade: { label: '美股 Firstrade', color: '#7c3aed', kind: 'stock',   currency: 'USD', quote: 'yahoo' },
   tw_stock:     { label: '台股',           color: '#0891b2', kind: 'stock',   currency: 'TWD', dataset: 'TaiwanStockPrice', closeField: 'close' },
   tw_futures:   { label: '台股期貨',       color: '#f59e0b', kind: 'futures', currency: 'TWD' },
   cash:         { label: '現金',           color: '#94a3b8', kind: 'cash' },
@@ -29,7 +29,7 @@ export const STALE_MS = 10 * 60 * 1000;       // 報價超過此時間視為過�
 export const PRICE_LOOKBACK_DAYS = 14;        // 股價/匯率回溯天數（確保至少兩個交易日，可算今日%）
 export const FUT_LOOKBACK_DAYS = 12;          // 期貨日資料回溯天數（確保含近月）
 
-/* FinMind API：所有資料（美股/台股/期貨/匯率）單一來源，原生支援 CORS，免金鑰。 */
+/* FinMind API：台股/期貨/匯率，原生支援 CORS，免金鑰。（美股改走 Worker 代理 Yahoo，見 sync.fetchQuotes） */
 export const FINMIND_API = 'https://api.finmindtrade.com/api/v4/data';
 
 /* 雲端同步後端（Cloudflare Worker）：登入、持倉同步、每日歷史。 */

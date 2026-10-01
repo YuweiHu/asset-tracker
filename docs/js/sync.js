@@ -100,6 +100,14 @@ export async function fetchHistory(days = 90) {
   return data.snapshots || [];
 }
 
+// 美股報價（Worker 代理 Yahoo）：回傳 { 代號: {price,prevClose,currency,time} | {error} }
+export async function fetchQuotes(symbols) {
+  const res = await authFetch(`/quotes?symbols=${encodeURIComponent(symbols.join(','))}`);
+  if (!res.ok) throw new Error(`報價讀取失敗 (${res.status})`);
+  const data = await res.json();
+  return data.quotes || {};
+}
+
 export async function pushNow() {
   setStatus('syncing');
   try {
